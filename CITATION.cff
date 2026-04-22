@@ -1,0 +1,83 @@
+cff-version: 1.2.0
+message: "If you use this benchmark in your research, please cite the foundational papers below."
+title: "knowledge-distillation-benchmark"
+version: 1.0.0
+date-released: 2024-01-01
+url: "https://github.com/adnaan512/knowledge-distillation-benchmark"
+authors:
+  - family-names: Hassnain
+    given-names: Adnan
+    affiliation: "BS CS, NUST Pakistan"
+
+references:
+  - type: article
+    title: "Distilling the Knowledge in a Neural Network"
+    authors:
+      - family-names: Hinton
+        given-names: Geoffrey
+      - family-names: Vinyals
+        given-names: Oriol
+      - family-names: Dean
+        given-names: Jeff
+    year: 2015
+    url: "https://arxiv.org/abs/1503.02531"
+    notes: "Foundational paper introducing soft-label knowledge distillation and temperature scaling."
+
+  - type: article
+    title: "FitNets: Hints for Thin Deep Nets"
+    authors:
+      - family-names: Romero
+        given-names: Adriana
+      - family-names: Ballas
+        given-names: Nicolas
+      - family-names: Kahou
+        given-names: Samira Ebrahimi
+      - family-names: Chassang
+        given-names: Antoine
+      - family-names: Gatta
+        given-names: Carlo
+      - family-names: Bengio
+        given-names: Yoshua
+    year: 2015
+    conference: "ICLR 2015"
+    url: "https://arxiv.org/abs/1412.6550"
+    notes: "Introduced feature-based (intermediate hint) distillation."
+
+  - type: article
+    title: "Relational Knowledge Distillation"
+    authors:
+      - family-names: Park
+        given-names: Wonpyo
+      - family-names: Kim
+        given-names: Dongju
+      - family-names: Lu
+        given-names: Yan
+      - family-names: Cho
+        given-names: Minsu
+    year: 2019
+    conference: "CVPR 2019"
+    url: "https://arxiv.org/abs/1904.05068"
+    notes: "Introduced relation-based distillation via pairwise embedding geometry matching."
+
+  - type: article
+    title: "MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications"
+    authors:
+      - family-names: Howard
+        given-names: Andrew G.
+      - family-names: Zhu
+        given-names: Menglong
+      - family-names: Chen
+        given-names: Bo
+      - family-names: Kalenichenko
+        given-names: Dmitry
+      - family-names: Wang
+        given-names: Weijun
+      - family-names: Weyand
+        given-names: Tobias
+      - family-names: Andreetto
+        given-names: Marco
+      - family-names: Adam
+        given-names: Hartwig
+    year: 2017
+    url: "https://arxiv.org/abs/1704.04861"
+    notes: "Original MobileNets paper introducing depthwise separable convolutions and width multiplier."
