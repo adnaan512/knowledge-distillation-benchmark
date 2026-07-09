@@ -140,6 +140,10 @@ def run_full_mode(args):
     print(f"  Device    : {device}")
     print("═" * 62 + "\n")
 
+    # Enable cuDNN auto-tuner for a free speed boost on GPU
+    if torch.cuda.is_available():
+        torch.backends.cudnn.benchmark = True
+
     # ── Dataset ───────────────────────────────────────────────────────────────
     print(f"[1] Loading CIFAR-10 from '{args.data_dir}' (downloads ~170 MB if needed)...")
     train_loader, val_loader, test_loader = get_cifar10_loaders(data_dir=args.data_dir)
@@ -174,8 +178,8 @@ def run_full_mode(args):
             if method == "response":
                 distiller = ResponseBasedDistillation(
                     teacher=teacher, student=student, device=device,
-                    temperatures=[1.0, 2.0, 4.0, 8.0, 16.0],
-                    alphas=[0.1, 0.5, 0.9],
+                    temperatures=[4.0],
+                    alphas=[0.1, 0.9],
                 )
                 _, sweep = distiller.sweep(
                     train_loader, val_loader, test_loader,
