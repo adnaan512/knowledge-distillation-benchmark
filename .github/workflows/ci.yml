@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Lint with flake8
+        run: |
+          # Stop on syntax errors and undefined names; warn on style
+          flake8 src/ tests/ examples/ main.py \
+            --count \
+            --select=E9,F63,F7,F82 \
+            --show-source \
+            --statistics
+          # Full style check (non-blocking — warnings only)
+          flake8 src/ tests/ examples/ main.py \
+            --count \
+            --max-line-length=100 \
+            --ignore=E203,W503 \
+            --statistics \
+            --exit-zero
+
+      - name: Run unit tests (mock mode — no download, no GPU)
+        run: |
+          pytest tests/ \
+            --tb=short \
+            --cov=src \
+            --cov-report=term-missing \
+            -v
+
+      - name: Validate demo runs end-to-end (mock mode)
+        run: |
+          python main.py --dry-run
+          python main.py --mode demo --epochs 1 --output /tmp/ci_report.html --quiet
+          test -f /tmp/ci_report.html && echo "Report generated successfully"
+
+      - name: Validate examples/run_demo.py
+        run: |
+          python examples/run_demo.py --epochs 1 --output /tmp/demo_report.html --quiet
+          test -f /tmp/demo_report.html && echo "Demo report generated successfully"
