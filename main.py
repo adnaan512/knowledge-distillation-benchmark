@@ -79,7 +79,7 @@ def dry_run():
     from src.distillation.relation_based import RelationBasedDistillation
     from tests.fixtures.mock_models import TinyTeacher, TinyStudent
 
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     teacher = TinyTeacher().to(device)
     student = TinyStudent().to(device)
 
@@ -125,7 +125,7 @@ def run_full_mode(args):
     from src.models.teacher import TeacherModel
     from src.models.student import StudentModel, COMPRESSION_VARIANTS
 
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     epochs = args.epochs or 10
     verbose = not args.quiet
 
