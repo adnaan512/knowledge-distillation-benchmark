@@ -65,6 +65,44 @@ class TeacherModel(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.backbone(x)
 
+    def fine_tune_head(self, train_loader, val_loader, device: torch.device, epochs: int = 3):
+        import torch.optim as optim
+        import torch.nn.functional as F
+
+        # Only optimize the fully connected layer
+        optimizer = optim.Adam(self.backbone.fc.parameters(), lr=1e-3)
+        self.to(device)
+
+        print(f"    Fine-tuning teacher classifier head for {epochs} epochs...")
+        for epoch in range(epochs):
+            self.train()
+            total_loss = 0.0
+            
+            for images, labels in train_loader:
+                images, labels = images.to(device), labels.to(device)
+                optimizer.zero_grad()
+                outputs = self(images)
+                loss = F.cross_entropy(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                total_loss += loss.item()
+            
+            # Quick validation accuracy evaluation
+            self.eval()
+            correct = 0
+            total = 0
+            with torch.no_grad():
+                for images, labels in val_loader:
+                    images, labels = images.to(device), labels.to(device)
+                    outputs = self(images)
+                    _, preds = torch.max(outputs, 1)
+                    correct += (preds == labels).sum().item()
+                    total += labels.size(0)
+            
+            val_acc = correct / total * 100
+            print(f"      Epoch {epoch+1}/{epochs} | Loss: {total_loss/len(train_loader):.4f} | Val Acc: {val_acc:.1f}%")
+
+
     def get_features(self, x: torch.Tensor, layer: int = 3) -> torch.Tensor:
         """
         Extract intermediate feature maps from a specified ResNet layer.
