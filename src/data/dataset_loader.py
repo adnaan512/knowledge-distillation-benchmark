@@ -63,10 +63,10 @@ def get_cifar10_loaders(
     ])
 
     full_train = torchvision.datasets.CIFAR10(
-        root=data_dir, train=True, download=True, transform=train_transform
+        root=data_dir, train=True, download=False, transform=train_transform
     )
     test_set = torchvision.datasets.CIFAR10(
-        root=data_dir, train=False, download=True, transform=eval_transform
+        root=data_dir, train=False, download=False, transform=eval_transform
     )
 
     # Reproducible val split — same seed means same 5k images every run
