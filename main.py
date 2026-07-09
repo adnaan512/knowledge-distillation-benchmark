@@ -126,7 +126,7 @@ def run_full_mode(args):
     from src.models.student import StudentModel, COMPRESSION_VARIANTS
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    epochs = args.epochs or 10
+    epochs = args.epochs or 5
     verbose = not args.quiet
 
     methods   = ["response", "feature", "relation"] if args.method == "all" else [args.method]
@@ -152,7 +152,7 @@ def run_full_mode(args):
     # ── Teacher ───────────────────────────────────────────────────────────────
     print("[2] Building ResNet-50 teacher (ImageNet pretrained)...")
     teacher = TeacherModel(num_classes=10, pretrained=True).to(device)
-    teacher.fine_tune_head(train_loader, val_loader, device, epochs=20)
+    teacher.fine_tune_head(train_loader, val_loader, device, epochs=5)
     evaluator = ModelEvaluator(device=device)
     teacher_acc  = evaluator.accuracy(teacher, test_loader)
     teacher_size = evaluator.model_size_mb(teacher)
