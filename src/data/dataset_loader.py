@@ -30,8 +30,8 @@ CIFAR10_CLASSES = [
 
 def get_cifar10_loaders(
     data_dir: str = "./data",
-    batch_size_train: int = 128,
-    batch_size_eval: int = 256,
+    batch_size_train: int = 64,
+    batch_size_eval: int = 128,
     val_size: int = 5000,
     num_workers: int = 2,
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
@@ -51,13 +51,15 @@ def get_cifar10_loaders(
         raise ImportError("torchvision is required. Run: pip install torchvision")
 
     train_transform = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
+        transforms.Resize(256),
+        transforms.RandomCrop(224),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(CIFAR10_MEAN, CIFAR10_STD),
     ])
 
     eval_transform = transforms.Compose([
+        transforms.Resize(224),
         transforms.ToTensor(),
         transforms.Normalize(CIFAR10_MEAN, CIFAR10_STD),
     ])
@@ -111,14 +113,14 @@ class MockDatasetLoader:
     """
     Synthetic dataset for CI and quick-demo mode.
 
-    Generates random (3, 32, 32) tensors with random integer labels
+    Generates random (3, 224, 224) tensors with random integer labels
     in [0, 9]. No downloads, no disk, no real patterns to learn —
-    but the tensor shapes and label ranges are identical to CIFAR-10,
+    but the tensor shapes and label ranges are identical to resized CIFAR-10,
     so all downstream code runs without modification.
 
     This lets CI validate every code path (model forward passes,
     loss calculations, evaluation loops) in under 60 seconds with
-    no internet access and ~1MB of memory.
+    no internet access and minimal memory.
     """
 
     def __init__(
@@ -134,7 +136,7 @@ class MockDatasetLoader:
         self.seed = seed
         torch.manual_seed(seed)
 
-        self._data = torch.randn(num_samples, 3, 32, 32)
+        self._data = torch.randn(num_samples, 3, 224, 224)
         self._labels = torch.randint(0, num_classes, (num_samples,))
 
     def _make_loader(self, data: torch.Tensor, labels: torch.Tensor) -> DataLoader:
