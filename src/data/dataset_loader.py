@@ -91,19 +91,21 @@ def get_cifar10_loaders(
         batch_size=batch_size_train,
         shuffle=True,
         num_workers=num_workers,
-        pin_memory=False,
+        pin_memory=True,
     )
     val_loader = DataLoader(
         val_set,
         batch_size=batch_size_eval,
         shuffle=False,
         num_workers=num_workers,
+        pin_memory=True,
     )
     test_loader = DataLoader(
         test_set,
         batch_size=batch_size_eval,
         shuffle=False,
         num_workers=num_workers,
+        pin_memory=True,
     )
 
     return train_loader, val_loader, test_loader

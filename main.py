@@ -152,7 +152,16 @@ def run_full_mode(args):
     # ── Teacher ───────────────────────────────────────────────────────────────
     print("[2] Building ResNet-50 teacher (ImageNet pretrained)...")
     teacher = TeacherModel(num_classes=10, pretrained=True).to(device)
-    teacher.fine_tune_head(train_loader, val_loader, device, epochs=5)
+    teacher_path = os.path.join(args.data_dir, "teacher_finetuned.pth")
+    if os.path.exists(teacher_path):
+        print(f"    [!] Found cached teacher at {teacher_path}. Loading weights...")
+        teacher.load_state_dict(torch.load(teacher_path, map_location=device))
+    else:
+        print("    [!] No cached teacher found. Fine-tuning from scratch...")
+        teacher.fine_tune_head(train_loader, val_loader, device, epochs=5)
+        print(f"    [!] Saving fine-tuned teacher to {teacher_path}...")
+        os.makedirs(args.data_dir, exist_ok=True)
+        torch.save(teacher.state_dict(), teacher_path)
     evaluator = ModelEvaluator(device=device)
     teacher_acc  = evaluator.accuracy(teacher, test_loader)
     teacher_size = evaluator.model_size_mb(teacher)
