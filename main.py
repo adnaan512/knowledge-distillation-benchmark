@@ -42,7 +42,7 @@ Examples:
     )
     parser.add_argument(
         "--epochs", type=int, default=None,
-        help="Training epochs per run (default: 3 for demo, 10 for full)",
+        help="Training epochs per run (default: 3 for demo, 5 for full)",
     )
     parser.add_argument(
         "--output", type=str, default="benchmark_report.html",
@@ -126,7 +126,7 @@ def run_full_mode(args):
     from src.models.student import StudentModel, COMPRESSION_VARIANTS
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    epochs = args.epochs or 5
+    epochs = args.epochs or 2
     verbose = not args.quiet
 
     methods   = ["response", "feature", "relation"] if args.method == "all" else [args.method]
@@ -143,6 +143,8 @@ def run_full_mode(args):
     # Enable cuDNN auto-tuner for a free speed boost on GPU
     if torch.cuda.is_available():
         torch.backends.cudnn.benchmark = True
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
 
     # ── Dataset ───────────────────────────────────────────────────────────────
     print(f"[1] Loading CIFAR-10 from '{args.data_dir}' (downloads ~170 MB if needed)...")
@@ -158,7 +160,7 @@ def run_full_mode(args):
         teacher.load_state_dict(torch.load(teacher_path, map_location=device))
     else:
         print("    [!] No cached teacher found. Fine-tuning from scratch...")
-        teacher.fine_tune_head(train_loader, val_loader, device, epochs=5)
+        teacher.fine_tune_head(train_loader, val_loader, device, epochs=2)
         print(f"    [!] Saving fine-tuned teacher to {teacher_path}...")
         os.makedirs(args.data_dir, exist_ok=True)
         torch.save(teacher.state_dict(), teacher_path)

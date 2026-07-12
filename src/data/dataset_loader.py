@@ -12,6 +12,7 @@ and are standard in the literature. Using ImageNet stats here would
 systematically mis-normalize every pixel and hurt transfer learning.
 """
 
+import os
 import torch
 from torch.utils.data import DataLoader, Subset, random_split
 from typing import Tuple, Optional
@@ -30,10 +31,10 @@ CIFAR10_CLASSES = [
 
 def get_cifar10_loaders(
     data_dir: str = "./data",
-    batch_size_train: int = 64,
-    batch_size_eval: int = 128,
+    batch_size_train: int = 256,
+    batch_size_eval: int = 512,
     val_size: int = 5000,
-    num_workers: int = 2,
+    num_workers: Optional[int] = None,
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
     """
     Download (if needed) and return train/val/test DataLoaders.
@@ -49,6 +50,9 @@ def get_cifar10_loaders(
         import torchvision.transforms as transforms
     except ImportError:
         raise ImportError("torchvision is required. Run: pip install torchvision")
+
+    if num_workers is None:
+        num_workers = os.cpu_count() or 2
 
     train_transform = transforms.Compose([
         transforms.Resize(256),
