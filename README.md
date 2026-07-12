@@ -1,4 +1,4 @@
-# 🧠 Knowledge Distillation Benchmark
+#  Knowledge Distillation Benchmark
 
 <p align="center">
   <a href="https://www.kaggle.com/code/adnanhassnain/knowledge-distillation-benchmark">
@@ -16,17 +16,17 @@
 
 ---
 
-## 🎯 The Problem
+##  The Problem
 
 ResNet-50 is accurate but heavy — 94 MB, 23.5M parameters. You can't ship that to a phone or an edge device.
 
-**Knowledge Distillation** solves this by training a small *student* model to mimic the large *teacher* — transferring its "knowledge" without copying its size.
+**Knowledge Distillation** solves this by training a small *student* model to mimic the large *teacher*  transferring its "knowledge" without copying its size.
 
 This project benchmarks **three distillation strategies** to answer: *which one is best, and how much can you compress before accuracy collapses?*
 
 ---
 
-## 🔬 Methods
+##  Methods
 
 | Method | Core Idea |
 |--------|-----------|
@@ -36,7 +36,7 @@ This project benchmarks **three distillation strategies** to answer: *which one 
 
 ---
 
-## 📊 Results
+## Results
 
 > Full run on CIFAR-10 — Teacher (ResNet-50): **78.7% accuracy**, 23.5M params, 94.1 MB
 
@@ -56,7 +56,7 @@ Feature   ███████████████████████�
 
 ---
 
-## 💡 Key Findings
+##  Key Findings
 
 **1. 10× compression with minimal accuracy loss is achievable.**
 The `full` MobileNetV2 student (2.24M params, ~9MB) retains **86% of the teacher's accuracy** in just 2 training epochs. For most deployment scenarios, this trade-off is entirely acceptable.
@@ -69,10 +69,10 @@ The `half` and `quarter` variants (~0.4–0.7M params) collapsed to near-random 
 
 ---
 
-## 🚀 Run It Yourself
+## Run It Yourself
 
 ### On Kaggle (GPU, no setup needed)
-👉 [**Open Notebook**](https://www.kaggle.com/code/adnanhassnain/knowledge-distillation-benchmark)
+ [**Open Notebook**](https://www.kaggle.com/code/adnanhassnain/knowledge-distillation-benchmark)
 
 ```python
 !python main.py --mode full \
@@ -106,7 +106,7 @@ python main.py --mode full
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ResNet-50 Teacher (78.7% acc, 94 MB)
@@ -124,10 +124,10 @@ MobileNetV2 Student
 
 ---
 
-## 📁 Structure
+##  Structure
 
 ```
-├── main.py                          # CLI — start here
+├── main.py                          # CLI start here
 ├── src/
 │   ├── models/teacher.py            # ResNet-50 (frozen backbone + fine-tuned head)
 │   ├── models/student.py            # MobileNetV2 (3 width variants)
@@ -144,7 +144,7 @@ MobileNetV2 Student
 
 ---
 
-## 📚 References
+##  References
 
 1. Hinton, Vinyals & Dean (2015). *Distilling the Knowledge in a Neural Network.* [arXiv:1503.02531](https://arxiv.org/abs/1503.02531)
 2. Romero et al. (2015). *FitNets: Hints for Thin Deep Nets.* [arXiv:1412.6550](https://arxiv.org/abs/1412.6550)
@@ -152,7 +152,7 @@ MobileNetV2 Student
 
 ---
 
-## 👤 Author
+##  Author
 
 **Adnan Hassnain** · BS CS, NUST Pakistan  
 [github.com/adnaan512](https://github.com/adnaan512) · [Kaggle Notebook](https://www.kaggle.com/code/adnanhassnain/knowledge-distillation-benchmark)
