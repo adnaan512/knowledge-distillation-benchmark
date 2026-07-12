@@ -64,6 +64,10 @@ Examples:
         "--quiet", action="store_true",
         help="Suppress per-epoch training output",
     )
+    parser.add_argument(
+        "--max-runs", type=int, default=5,
+        help="Max number of (method, variant) combinations to train (default: 5)",
+    )
     return parser.parse_args()
 
 
@@ -136,10 +140,16 @@ def run_full_mode(args):
     methods   = ["response", "feature", "relation"] if args.method == "all" else [args.method]
     variants  = list(COMPRESSION_VARIANTS.keys()) if args.compression == "all" else [args.compression]
 
+    # Build flat list of (method, variant) pairs, capped at --max-runs
+    all_combinations = [(m, v) for m in methods for v in variants]
+    if args.max_runs and args.max_runs < len(all_combinations):
+        all_combinations = all_combinations[:args.max_runs]
+
     print("\n" + "═" * 62)
     print("  Knowledge Distillation Benchmark — FULL MODE")
     print(f"  Methods   : {', '.join(methods)}")
     print(f"  Variants  : {', '.join(variants)}")
+    print(f"  Runs      : {len(all_combinations)} of {len([m for m in methods]) * len(variants)} combinations")
     print(f"  Epochs    : {epochs} per run")
     print(f"  Device    : {device}")
     print("═" * 62 + "\n")
@@ -180,59 +190,58 @@ def run_full_mode(args):
     temp_sweep   = {}
     step = 3
 
-    for method in methods:
-        for variant in variants:
-            print(f"[{step}] {method.upper()} distillation — '{variant}' student")
-            step += 1
+    for method, variant in all_combinations:
+        print(f"[{step}] {method.upper()} distillation — '{variant}' student")
+        step += 1
 
-            student = StudentModel(variant=variant, num_classes=10).to(device)
-            n_params = evaluator.num_parameters(student)
-            print(f"    Student params: {n_params/1e6:.2f}M  "
-                  f"(compression ≈ {teacher_params/n_params:.1f}×)")
+        student = StudentModel(variant=variant, num_classes=10).to(device)
+        n_params = evaluator.num_parameters(student)
+        print(f"    Student params: {n_params/1e6:.2f}M  "
+              f"(compression ≈ {teacher_params/n_params:.1f}×)")
 
-            if method == "response":
-                distiller = ResponseBasedDistillation(
-                    teacher=teacher, student=student, device=device,
-                    temperatures=[4.0],
-                    alphas=[0.1, 0.9],
-                )
-                _, sweep = distiller.sweep(
-                    train_loader, val_loader, test_loader,
-                    num_epochs=epochs, variant=variant, verbose=verbose,
-                )
-                if not temp_sweep:
-                    temp_sweep = sweep
-
-            elif method == "feature":
-                distiller = FeatureBasedDistillation(
-                    teacher=teacher, student=student, device=device, lam=0.5,
-                )
-                distiller.run(
-                    train_loader, val_loader, test_loader,
-                    num_epochs=epochs, variant=variant, verbose=verbose,
-                )
-
-            elif method == "relation":
-                distiller = RelationBasedDistillation(
-                    teacher=teacher, student=student, device=device, lam=0.5,
-                )
-                distiller.run(
-                    train_loader, val_loader, test_loader,
-                    num_epochs=epochs, variant=variant, verbose=verbose,
-                )
-
-            metrics = evaluator.evaluate_model(
-                model=student,
-                test_loader=test_loader,
-                teacher=teacher,
-                teacher_accuracy=teacher_acc,
-                method=method,
-                compression_variant=variant,
+        if method == "response":
+            distiller = ResponseBasedDistillation(
+                teacher=teacher, student=student, device=device,
+                temperatures=[4.0],
+                alphas=[0.1, 0.9],
             )
-            all_results.append(metrics)
-            print(f"    → Accuracy: {metrics.accuracy*100:.1f}%  "
-                  f"Retained: {metrics.accuracy_retained_pct:.1f}%  "
-                  f"Score: {metrics.efficiency_score:.3f}\n")
+            _, sweep = distiller.sweep(
+                train_loader, val_loader, test_loader,
+                num_epochs=epochs, variant=variant, verbose=verbose,
+            )
+            if not temp_sweep:
+                temp_sweep = sweep
+
+        elif method == "feature":
+            distiller = FeatureBasedDistillation(
+                teacher=teacher, student=student, device=device, lam=0.5,
+            )
+            distiller.run(
+                train_loader, val_loader, test_loader,
+                num_epochs=epochs, variant=variant, verbose=verbose,
+            )
+
+        elif method == "relation":
+            distiller = RelationBasedDistillation(
+                teacher=teacher, student=student, device=device, lam=0.5,
+            )
+            distiller.run(
+                train_loader, val_loader, test_loader,
+                num_epochs=epochs, variant=variant, verbose=verbose,
+            )
+
+        metrics = evaluator.evaluate_model(
+            model=student,
+            test_loader=test_loader,
+            teacher=teacher,
+            teacher_accuracy=teacher_acc,
+            method=method,
+            compression_variant=variant,
+        )
+        all_results.append(metrics)
+        print(f"    → Accuracy: {metrics.accuracy*100:.1f}%  "
+              f"Retained: {metrics.accuracy_retained_pct:.1f}%  "
+              f"Score: {metrics.efficiency_score:.3f}\n")
 
     # ── Report ────────────────────────────────────────────────────────────────
     print(f"[{step}] Generating HTML report → {args.output}")
