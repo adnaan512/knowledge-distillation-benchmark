@@ -50,7 +50,11 @@ Examples:
     )
     parser.add_argument(
         "--data-dir", type=str, default="./data",
-        help="Directory to cache CIFAR-10 (default: ./data)",
+        help="Directory containing CIFAR-10 data (default: ./data)",
+    )
+    parser.add_argument(
+        "--teacher-cache", type=str, default=".",
+        help="Writable directory to save/load teacher checkpoint (default: ./ — use /kaggle/working on Kaggle)",
     )
     parser.add_argument(
         "--dry-run", action="store_true",
@@ -154,7 +158,7 @@ def run_full_mode(args):
     # ── Teacher ───────────────────────────────────────────────────────────────
     print("[2] Building ResNet-50 teacher (ImageNet pretrained)...")
     teacher = TeacherModel(num_classes=10, pretrained=True).to(device)
-    teacher_path = os.path.join(args.data_dir, "teacher_finetuned.pth")
+    teacher_path = os.path.join(args.teacher_cache, "teacher_finetuned.pth")
     if os.path.exists(teacher_path):
         print(f"    [!] Found cached teacher at {teacher_path}. Loading weights...")
         teacher.load_state_dict(torch.load(teacher_path, map_location=device))
@@ -162,7 +166,7 @@ def run_full_mode(args):
         print("    [!] No cached teacher found. Fine-tuning from scratch...")
         teacher.fine_tune_head(train_loader, val_loader, device, epochs=2)
         print(f"    [!] Saving fine-tuned teacher to {teacher_path}...")
-        os.makedirs(args.data_dir, exist_ok=True)
+        os.makedirs(args.teacher_cache, exist_ok=True)
         torch.save(teacher.state_dict(), teacher_path)
     evaluator = ModelEvaluator(device=device)
     teacher_acc  = evaluator.accuracy(teacher, test_loader)
