@@ -48,11 +48,12 @@ This project benchmarks **three distillation strategies** to answer: *which one 
 | 4 | Response | quarter | 17.8% | 57.5× | 22.7% | 0.083 |
 | 5 | Feature | half | 17.4% | 33.6× | 22.1% | 0.079 |
 
-**Accuracy retained at `full` compression (2 epochs):**
-```
-Response  ████████████████████████████████████████████  86.0%
-Feature   ████████████████████████████████████████████  84.9%
-```
+### Visualizing the Trade-offs
+
+<p align="center">
+  <img src="assets/accuracy_retained.png" width="48%" />
+  <img src="assets/accuracy_vs_compression.png" width="48%" />
+</p>
 
 ---
 
