@@ -38,7 +38,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from typing import List, Tuple
+from typing import Tuple
 
 from src.data_models import DistillationResult
 
@@ -78,7 +78,8 @@ class RelationBasedDistillation:
         Returns:
             (B, B) matrix where entry [i,j] = normalized distance between i and j
         """
-        # Squared pairwise distances via expansion: ||a-b||^2 = ||a||^2 + ||b||^2 - 2*a^T*b
+        # Squared pairwise distances via expansion: ||a-b||^2 = ||a||^2 +
+        # ||b||^2 - 2*a^T*b
         sq_norm = (embeddings ** 2).sum(dim=1, keepdim=True)
         dist_sq = sq_norm + sq_norm.T - 2 * embeddings @ embeddings.T
         dist_sq = dist_sq.clamp(min=0.0)
@@ -138,7 +139,8 @@ class RelationBasedDistillation:
             labels = labels.to(self.device)
 
             teacher_embs = self._get_teacher_embeddings(images)
-            student_embs, student_logits = self._get_student_embeddings_and_logits(images)
+            student_embs, student_logits = self._get_student_embeddings_and_logits(
+                images)
 
             ce_loss = F.cross_entropy(student_logits, labels)
             r_loss = self.relation_loss(student_embs, teacher_embs)
@@ -189,7 +191,8 @@ class RelationBasedDistillation:
         best_epoch = 0
 
         for epoch in range(1, num_epochs + 1):
-            total_loss, rel_loss = self.train_one_epoch(train_loader, optimizer)
+            total_loss, rel_loss = self.train_one_epoch(
+                train_loader, optimizer)
             val_acc = self.evaluate(val_loader)
             scheduler.step()
 

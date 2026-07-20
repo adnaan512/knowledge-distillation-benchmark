@@ -15,13 +15,12 @@ hours on CPU and wouldn't meaningfully improve results on a 32x32 dataset.
 
 import torch
 import torch.nn as nn
-from typing import Dict, Tuple
 
 
 # Named compression variants and their MobileNetV2 width multipliers
 COMPRESSION_VARIANTS = {
-    "full":    1.0,   # ~3.4M parameters, compression ratio ~7x vs ResNet-50
-    "half":    0.5,   # ~1.4M parameters, compression ratio ~17x
+    "full": 1.0,   # ~3.4M parameters, compression ratio ~7x vs ResNet-50
+    "half": 0.5,   # ~1.4M parameters, compression ratio ~17x
     "quarter": 0.35,  # ~0.9M parameters, compression ratio ~26x
 }
 
@@ -55,7 +54,8 @@ class StudentModel(nn.Module):
         try:
             import torchvision.models as tvm
         except ImportError:
-            raise ImportError("torchvision required. Run: pip install torchvision")
+            raise ImportError(
+                "torchvision required. Run: pip install torchvision")
 
         # Only width_mult=1.0 has an official pretrained checkpoint
         if pretrained and self.width_mult == 1.0:
@@ -108,7 +108,10 @@ class StudentModel(nn.Module):
         features = nn.functional.adaptive_avg_pool2d(features, (1, 1))
         return features.flatten(1)
 
-    def get_intermediate_features(self, x: torch.Tensor, block_idx: int = 14) -> torch.Tensor:
+    def get_intermediate_features(
+            self,
+            x: torch.Tensor,
+            block_idx: int = 14) -> torch.Tensor:
         """
         Extract intermediate feature maps from a specific inverted residual block.
 
@@ -127,7 +130,8 @@ class StudentModel(nn.Module):
         def hook_fn(module, input, output):
             intermediate["feat"] = output
 
-        handle = self.backbone.features[block_idx].register_forward_hook(hook_fn)
+        handle = self.backbone.features[block_idx].register_forward_hook(
+            hook_fn)
         _ = self.backbone.features(x)
         handle.remove()
         return intermediate["feat"]
@@ -178,7 +182,10 @@ class MockStudentModel(nn.Module):
         x = torch.relu(self.conv(x))
         return self.pool(x).flatten(1)
 
-    def get_intermediate_features(self, x: torch.Tensor, block_idx: int = 14) -> torch.Tensor:
+    def get_intermediate_features(
+            self,
+            x: torch.Tensor,
+            block_idx: int = 14) -> torch.Tensor:
         return torch.relu(self.conv(x))
 
     @property

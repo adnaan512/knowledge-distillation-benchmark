@@ -35,8 +35,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from typing import List, Tuple, Dict, Optional
-import time
+from typing import List, Tuple, Dict
 
 from src.data_models import DistillationResult
 

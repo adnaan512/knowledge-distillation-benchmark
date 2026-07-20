@@ -33,11 +33,23 @@ Examples:
         help="'demo' = mock data (no download); 'full' = real CIFAR-10",
     )
     parser.add_argument(
-        "--method", choices=["response", "feature", "relation", "all"], default="all",
+        "--method",
+        choices=[
+            "response",
+            "feature",
+            "relation",
+            "all"],
+        default="all",
         help="Distillation method to run (default: all)",
     )
     parser.add_argument(
-        "--compression", choices=["full", "half", "quarter", "all"], default="all",
+        "--compression",
+        choices=[
+            "full",
+            "half",
+            "quarter",
+            "all"],
+        default="all",
         help="Student compression variant (default: all)",
     )
     parser.add_argument(
@@ -53,7 +65,9 @@ Examples:
         help="Directory containing CIFAR-10 data (default: ./data)",
     )
     parser.add_argument(
-        "--teacher-cache", type=str, default=".",
+        "--teacher-cache",
+        type=str,
+        default=".",
         help="Writable directory to save/load teacher checkpoint (default: ./ — use /kaggle/working on Kaggle)",
     )
     parser.add_argument(
@@ -65,26 +79,21 @@ Examples:
         help="Suppress per-epoch training output",
     )
     parser.add_argument(
-        "--max-runs", type=int, default=5,
+        "--max-runs",
+        type=int,
+        default=5,
         help="Max number of (method, variant) combinations to train (default: 5)",
     )
     return parser.parse_args()
 
 
-# ── Dry run ───────────────────────────────────────────────────────────────────
+# ── Dry run ─────────────────────────────────────────────────────────────
 
 def dry_run():
     """Validate all imports and a minimal forward pass — no training."""
     import torch
     print("\nDry run — validating imports and model construction...\n")
 
-    from src.data_models import DistillationResult, CompressionMetrics, BenchmarkReport
-    from src.data.dataset_loader import MockDatasetLoader
-    from src.benchmark.evaluator import ModelEvaluator
-    from src.reporting.report_generator import ReportGenerator
-    from src.distillation.response_based import ResponseBasedDistillation
-    from src.distillation.feature_based import FeatureBasedDistillation
-    from src.distillation.relation_based import RelationBasedDistillation
     from tests.fixtures.mock_models import TinyTeacher, TinyStudent
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -104,7 +113,7 @@ def dry_run():
     print("  ✓ Dry run complete — ready to train\n")
 
 
-# ── Demo mode ─────────────────────────────────────────────────────────────────
+# ── Demo mode ───────────────────────────────────────────────────────────
 
 def run_demo_mode(args):
     """All 3 methods on mock data — no downloads, runs in ~60s."""
@@ -118,7 +127,7 @@ def run_demo_mode(args):
     )
 
 
-# ── Full mode ─────────────────────────────────────────────────────────────────
+# ── Full mode ───────────────────────────────────────────────────────────
 
 def run_full_mode(args):
     """Complete benchmark on real CIFAR-10."""
@@ -137,8 +146,14 @@ def run_full_mode(args):
     epochs = args.epochs or 2
     verbose = not args.quiet
 
-    methods   = ["response", "feature", "relation"] if args.method == "all" else [args.method]
-    variants  = list(COMPRESSION_VARIANTS.keys()) if args.compression == "all" else [args.compression]
+    methods = [
+        "response",
+        "feature",
+        "relation"] if args.method == "all" else [
+        args.method]
+    variants = list(
+        COMPRESSION_VARIANTS.keys()) if args.compression == "all" else [
+        args.compression]
 
     # Build flat list of (method, variant) pairs, capped at --max-runs
     all_combinations = [(m, v) for m in methods for v in variants]
@@ -149,7 +164,8 @@ def run_full_mode(args):
     print("  Knowledge Distillation Benchmark — FULL MODE")
     print(f"  Methods   : {', '.join(methods)}")
     print(f"  Variants  : {', '.join(variants)}")
-    print(f"  Runs      : {len(all_combinations)} of {len([m for m in methods]) * len(variants)} combinations")
+    print(
+        f"  Runs      : {len(all_combinations)} of {len([m for m in methods]) * len(variants)} combinations")
     print(f"  Epochs    : {epochs} per run")
     print(f"  Device    : {device}")
     print("═" * 62 + "\n")
@@ -160,17 +176,20 @@ def run_full_mode(args):
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
 
-    # ── Dataset ───────────────────────────────────────────────────────────────
-    print(f"[1] Loading CIFAR-10 from '{args.data_dir}' (downloads ~170 MB if needed)...")
-    train_loader, val_loader, test_loader = get_cifar10_loaders(data_dir=args.data_dir)
+    # ── Dataset ─────────────────────────────────────────────────────────────
+    print(
+        f"[1] Loading CIFAR-10 from '{args.data_dir}' (downloads ~170 MB if needed)...")
+    train_loader, val_loader, test_loader = get_cifar10_loaders(
+        data_dir=args.data_dir)
     print("    ✓ Dataset ready (45k train / 5k val / 10k test)\n")
 
-    # ── Teacher ───────────────────────────────────────────────────────────────
+    # ── Teacher ─────────────────────────────────────────────────────────────
     print("[2] Building ResNet-50 teacher (ImageNet pretrained)...")
     teacher = TeacherModel(num_classes=10, pretrained=True).to(device)
     teacher_path = os.path.join(args.teacher_cache, "teacher_finetuned.pth")
     if os.path.exists(teacher_path):
-        print(f"    [!] Found cached teacher at {teacher_path}. Loading weights...")
+        print(
+            f"    [!] Found cached teacher at {teacher_path}. Loading weights...")
         teacher.load_state_dict(torch.load(teacher_path, map_location=device))
     else:
         print("    [!] No cached teacher found. Fine-tuning from scratch...")
@@ -179,15 +198,15 @@ def run_full_mode(args):
         os.makedirs(args.teacher_cache, exist_ok=True)
         torch.save(teacher.state_dict(), teacher_path)
     evaluator = ModelEvaluator(device=device)
-    teacher_acc  = evaluator.accuracy(teacher, test_loader)
+    teacher_acc = evaluator.accuracy(teacher, test_loader)
     teacher_size = evaluator.model_size_mb(teacher)
     teacher_params = evaluator.num_parameters(teacher)
     print(f"    Accuracy  : {teacher_acc*100:.1f}%")
     print(f"    Parameters: {teacher_params/1e6:.1f}M")
     print(f"    Size      : {teacher_size:.1f} MB\n")
 
-    all_results  = []
-    temp_sweep   = {}
+    all_results = []
+    temp_sweep = {}
     step = 3
 
     for method, variant in all_combinations:
@@ -203,7 +222,8 @@ def run_full_mode(args):
             distiller = ResponseBasedDistillation(
                 teacher=teacher, student=student, device=device,
                 temperatures=[4.0],
-                alphas=[0.1, 0.9],
+                alphas=[0.7],
+                # single value = 1 training run per combination
             )
             _, sweep = distiller.sweep(
                 train_loader, val_loader, test_loader,
@@ -243,9 +263,11 @@ def run_full_mode(args):
               f"Retained: {metrics.accuracy_retained_pct:.1f}%  "
               f"Score: {metrics.efficiency_score:.3f}\n")
 
-    # ── Report ────────────────────────────────────────────────────────────────
+    # ── Report ──────────────────────────────────────────────────────────────
     print(f"[{step}] Generating HTML report → {args.output}")
-    best = max(all_results, key=lambda r: r.efficiency_score) if all_results else None
+    best = max(
+        all_results,
+        key=lambda r: r.efficiency_score) if all_results else None
     report = BenchmarkReport(
         teacher_accuracy=teacher_acc,
         teacher_size_mb=teacher_size,
@@ -257,21 +279,23 @@ def run_full_mode(args):
     ReportGenerator().generate(report, output_path=args.output, temp_sweep=temp_sweep)
     print(f"    ✓ Report saved to: {args.output}\n")
 
-    # ── Summary table ─────────────────────────────────────────────────────────
+    # ── Summary table ───────────────────────────────────────────────────────
     print("─" * 68)
     print(f"{'Method':<12} {'Variant':<10} {'Acc':>6} {'Retained':>10} {'Latency':>10} {'Score':>8}")
     print("─" * 68)
-    for r in sorted(all_results, key=lambda x: x.efficiency_score, reverse=True):
+    for r in sorted(
+            all_results,
+            key=lambda x: x.efficiency_score,
+            reverse=True):
         marker = " ◀ best" if r is best else ""
         print(
             f"{r.method:<12} {r.compression_variant:<10} "
             f"{r.accuracy*100:>5.1f}%  {r.accuracy_retained_pct:>7.1f}%  "
-            f"{r.inference_time_ms:>8.1f}ms  {r.efficiency_score:>7.3f}{marker}"
-        )
+            f"{r.inference_time_ms:>8.1f}ms  {r.efficiency_score:>7.3f}{marker}")
     print("─" * 68 + "\n")
 
 
-# ── Entry point ───────────────────────────────────────────────────────────────
+# ── Entry point ─────────────────────────────────────────────────────────
 
 def main():
     args = parse_args()

@@ -7,14 +7,13 @@ and renders identically offline. This matters for research reproducibility:
 results should be inspectable years later without dependency rot.
 """
 
-import math
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 from datetime import datetime
 
 from src.data_models import CompressionMetrics, BenchmarkReport
 
 
-# ── HTML / CSS template ───────────────────────────────────────────────────────
+# ── HTML / CSS template ─────────────────────────────────────────────────
 
 _CSS = """
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -62,9 +61,14 @@ pre.ascii { background: #0d1117; color: #3fb950; padding: 1rem; border-radius: 6
 footer { margin-top: 3rem; color: #484f58; font-size: 0.8rem; text-align: center; }
 """
 
-# ── ASCII chart helpers ───────────────────────────────────────────────────────
+# ── ASCII chart helpers ─────────────────────────────────────────────────
 
-def _ascii_bar(value: float, max_val: float, width: int = 30, char: str = "█") -> str:
+
+def _ascii_bar(
+        value: float,
+        max_val: float,
+        width: int = 30,
+        char: str = "█") -> str:
     filled = int(round(value / max(max_val, 1e-8) * width))
     return char * filled + "░" * (width - filled)
 
@@ -116,7 +120,7 @@ def _compression_curve(results: List[CompressionMetrics]) -> str:
     return "\n".join(lines)
 
 
-# ── Badge helpers ─────────────────────────────────────────────────────────────
+# ── Badge helpers ───────────────────────────────────────────────────────
 
 def _method_badge(method: str) -> str:
     cls = {"response": "badge-response", "feature": "badge-feature",
@@ -132,7 +136,7 @@ def _color_class(value: float, lo: float = 60.0, hi: float = 80.0) -> str:
     return "red"
 
 
-# ── Main report builder ───────────────────────────────────────────────────────
+# ── Main report builder ─────────────────────────────────────────────────
 
 class ReportGenerator:
     """
@@ -203,9 +207,12 @@ class ReportGenerator:
 
         return output_path
 
-    # ── Section builders ──────────────────────────────────────────────────────
+    # ── Section builders ────────────────────────────────────────────────────
 
-    def _summary_cards(self, report: BenchmarkReport, best: Optional[CompressionMetrics]) -> str:
+    def _summary_cards(
+            self,
+            report: BenchmarkReport,
+            best: Optional[CompressionMetrics]) -> str:
         teacher_pct = f"{report.teacher_accuracy*100:.1f}%"
         best_acc = f"{best.accuracy*100:.1f}%" if best else "—"
         retained = f"{best.accuracy_retained_pct:.1f}%" if best else "—"
@@ -236,12 +243,18 @@ class ReportGenerator:
   </div>
 </div>"""
 
-    def _method_table(self, results: List[CompressionMetrics], best: Optional[CompressionMetrics]) -> str:
+    def _method_table(
+            self,
+            results: List[CompressionMetrics],
+            best: Optional[CompressionMetrics]) -> str:
         if not results:
             return '<div class="section"><p>No results yet.</p></div>'
 
         rows = ""
-        sorted_results = sorted(results, key=lambda r: r.efficiency_score, reverse=True)
+        sorted_results = sorted(
+            results,
+            key=lambda r: r.efficiency_score,
+            reverse=True)
 
         for r in sorted_results:
             is_best = best and r.method == best.method and r.compression_variant == best.compression_variant
@@ -314,8 +327,10 @@ class ReportGenerator:
 
     def _findings_section(self, report: BenchmarkReport) -> str:
         # Find a case where relation-based underperforms response-based
-        relation_results = [r for r in report.results if r.method == "relation"]
-        response_results = [r for r in report.results if r.method == "response"]
+        relation_results = [
+            r for r in report.results if r.method == "relation"]
+        response_results = [
+            r for r in report.results if r.method == "response"]
         counterintuitive = ""
         for rel in relation_results:
             for resp in response_results:

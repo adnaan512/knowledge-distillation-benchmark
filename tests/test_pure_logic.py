@@ -13,6 +13,10 @@ These can run in any environment, including lightweight CI environments
 where installing torch would time out.
 """
 
+from src.reporting.report_generator import ReportGenerator, _ascii_bar, _temperature_chart
+from src.data_models import (
+    DistillationResult, CompressionMetrics, BenchmarkReport, ModelProfile
+)
 import math
 import sys
 import os
@@ -20,13 +24,8 @@ import os
 # Make src importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src.data_models import (
-    DistillationResult, CompressionMetrics, BenchmarkReport, ModelProfile
-)
-from src.reporting.report_generator import ReportGenerator, _ascii_bar, _temperature_chart
 
-
-# ── Dataclass tests ────────────────────────────────────────────────────────────
+# ── Dataclass tests ─────────────────────────────────────────────────────
 
 class TestDataclasses:
 
@@ -72,9 +71,39 @@ class TestDataclasses:
 
     def test_benchmark_report_best_result(self):
         results = [
-            CompressionMetrics("response", "full", 0.71, 12.0, 13.8, 3_400_000, 7.3, 97.5, 0.178, 0.728),
-            CompressionMetrics("feature",  "half", 0.69, 7.4,   5.7, 1_400_000, 17.5, 94.7, 0.193, 0.728),
-            CompressionMetrics("relation", "quarter", 0.64, 5.9, 3.6, 900_000, 26.0, 87.9, 0.188, 0.728),
+            CompressionMetrics(
+                "response",
+                "full",
+                0.71,
+                12.0,
+                13.8,
+                3_400_000,
+                7.3,
+                97.5,
+                0.178,
+                0.728),
+            CompressionMetrics(
+                "feature",
+                "half",
+                0.69,
+                7.4,
+                5.7,
+                1_400_000,
+                17.5,
+                94.7,
+                0.193,
+                0.728),
+            CompressionMetrics(
+                "relation",
+                "quarter",
+                0.64,
+                5.9,
+                3.6,
+                900_000,
+                26.0,
+                87.9,
+                0.188,
+                0.728),
         ]
         report = BenchmarkReport(
             teacher_accuracy=0.728,
@@ -83,14 +112,15 @@ class TestDataclasses:
         )
         best = report.best_result()
         assert best is not None
-        assert best.efficiency_score == max(r.efficiency_score for r in results)
+        assert best.efficiency_score == max(
+            r.efficiency_score for r in results)
 
     def test_benchmark_report_empty(self):
         report = BenchmarkReport(teacher_accuracy=0.72, teacher_size_mb=97.5)
         assert report.best_result() is None
 
 
-# ── Efficiency score formula ───────────────────────────────────────────────────
+# ── Efficiency score formula ────────────────────────────────────────────
 
 class TestEfficiencyScore:
 
@@ -127,7 +157,7 @@ class TestEfficiencyScore:
         assert score > 0
 
 
-# ── Model size formula ─────────────────────────────────────────────────────────
+# ── Model size formula ──────────────────────────────────────────────────
 
 class TestModelSizeFormula:
 
@@ -150,7 +180,7 @@ class TestModelSizeFormula:
         assert 10.0 < size_mb < 20.0
 
 
-# ── Compression ratio ──────────────────────────────────────────────────────────
+# ── Compression ratio ───────────────────────────────────────────────────
 
 class TestCompressionRatio:
 
@@ -173,7 +203,7 @@ class TestCompressionRatio:
         assert ratio > 20.0  # should be approximately 26×
 
 
-# ── ASCII chart generation ─────────────────────────────────────────────────────
+# ── ASCII chart generation ──────────────────────────────────────────────
 
 class TestASCIICharts:
 
@@ -217,17 +247,17 @@ class TestASCIICharts:
         assert "68.0%" in chart
 
 
-# ── Report HTML generation ─────────────────────────────────────────────────────
+# ── Report HTML generation ──────────────────────────────────────────────
 
 class TestReportGenerator:
 
     def _make_report(self):
         results = [
-            CompressionMetrics("response", "full",    0.712, 12.1, 13.8, 3_400_000, 7.3,  97.8, 0.178, 0.728),
-            CompressionMetrics("response", "half",    0.698, 7.4,   5.7, 1_400_000, 17.5, 95.9, 0.196, 0.728),
-            CompressionMetrics("feature",  "full",    0.705, 12.1, 13.8, 3_400_000, 7.3,  96.8, 0.176, 0.728),
-            CompressionMetrics("relation", "quarter", 0.642,  5.9,  3.6,   900_000, 26.0, 88.2, 0.188, 0.728),
-            CompressionMetrics("response", "quarter", 0.658,  5.9,  3.6,   900_000, 26.0, 90.4, 0.192, 0.728),
+            CompressionMetrics("response", "full", 0.712, 12.1, 13.8, 3_400_000, 7.3, 97.8, 0.178, 0.728),
+            CompressionMetrics("response", "half", 0.698, 7.4, 5.7, 1_400_000, 17.5, 95.9, 0.196, 0.728),
+            CompressionMetrics("feature", "full", 0.705, 12.1, 13.8, 3_400_000, 7.3, 96.8, 0.176, 0.728),
+            CompressionMetrics("relation", "quarter", 0.642, 5.9, 3.6, 900_000, 26.0, 88.2, 0.188, 0.728),
+            CompressionMetrics("response", "quarter", 0.658, 5.9, 3.6, 900_000, 26.0, 90.4, 0.192, 0.728),
         ]
         return BenchmarkReport(
             teacher_accuracy=0.728,
@@ -242,7 +272,7 @@ class TestReportGenerator:
         gen = ReportGenerator()
         out = tmp_path / "test_report.html"
         path = gen.generate(report, output_path=str(out))
-        content = open(path).read()
+        content = open(path, encoding="utf-8").read()
         assert content.startswith("<!DOCTYPE html>")
         assert len(content) > 5000
 
@@ -251,7 +281,7 @@ class TestReportGenerator:
         gen = ReportGenerator()
         out = tmp_path / "test_report.html"
         path = gen.generate(report, output_path=str(out))
-        content = open(path).read()
+        content = open(path, encoding="utf-8").read()
 
         assert "Method Comparison" in content
         assert "Temperature Sensitivity" in content
@@ -266,7 +296,7 @@ class TestReportGenerator:
         gen = ReportGenerator()
         out = tmp_path / "test_report.html"
         path = gen.generate(report, output_path=str(out))
-        content = open(path).read()
+        content = open(path, encoding="utf-8").read()
         # Best method (response) should appear in the table
         assert "response" in content.lower()
 
@@ -279,7 +309,7 @@ class TestReportGenerator:
         gen = ReportGenerator()
         out = tmp_path / "test_report.html"
         path = gen.generate(report, output_path=str(out))
-        content = open(path).read()
+        content = open(path, encoding="utf-8").read()
         # The finding section should mention the counter-intuitive result
         assert "counter-intuitive" in content.lower() or "Counter-intuitive" in content
 
@@ -288,8 +318,11 @@ class TestReportGenerator:
         temp_sweep = {(1.0, 0.5): 0.61, (4.0, 0.5): 0.70, (8.0, 0.5): 0.69}
         gen = ReportGenerator()
         out = tmp_path / "test_report.html"
-        path = gen.generate(report, output_path=str(out), temp_sweep=temp_sweep)
-        content = open(path).read()
+        path = gen.generate(
+            report,
+            output_path=str(out),
+            temp_sweep=temp_sweep)
+        content = open(path, encoding="utf-8").read()
         assert "T=" in content
 
     def test_report_includes_author(self, tmp_path):
@@ -297,7 +330,7 @@ class TestReportGenerator:
         gen = ReportGenerator()
         out = tmp_path / "test_report.html"
         path = gen.generate(report, output_path=str(out))
-        content = open(path).read()
+        content = open(path, encoding="utf-8").read()
         assert "Adnan Hassnain" in content
 
     def test_report_is_self_contained(self, tmp_path):
@@ -306,13 +339,13 @@ class TestReportGenerator:
         gen = ReportGenerator()
         out = tmp_path / "test_report.html"
         path = gen.generate(report, output_path=str(out))
-        content = open(path).read()
+        content = open(path, encoding="utf-8").read()
         assert "cdn.jsdelivr" not in content
         assert "cdnjs.cloudflare" not in content
         assert "googleapis.com" not in content
 
 
-# ── Accuracy retained formula ──────────────────────────────────────────────────
+# ── Accuracy retained formula ───────────────────────────────────────────
 
 class TestAccuracyRetained:
 

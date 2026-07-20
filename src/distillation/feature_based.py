@@ -31,7 +31,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from typing import List, Tuple, Dict
+from typing import Tuple
 
 from src.data_models import DistillationResult
 
@@ -46,7 +46,11 @@ class FeatureAdapter(nn.Module):
 
     def __init__(self, student_channels: int, teacher_channels: int):
         super().__init__()
-        self.proj = nn.Conv2d(student_channels, teacher_channels, kernel_size=1, bias=False)
+        self.proj = nn.Conv2d(
+            student_channels,
+            teacher_channels,
+            kernel_size=1,
+            bias=False)
         self.bn = nn.BatchNorm2d(teacher_channels)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -84,7 +88,8 @@ class FeatureBasedDistillation:
         teacher_channels = teacher.feature_channels.get(teacher_layer, 1024)
         student_channels = student.intermediate_channels
 
-        self.adapter = FeatureAdapter(student_channels, teacher_channels).to(device)
+        self.adapter = FeatureAdapter(
+            student_channels, teacher_channels).to(device)
 
     def _get_teacher_features(self, images: torch.Tensor) -> torch.Tensor:
         """Extract teacher's layer3 feature maps (no grad needed)."""
@@ -92,7 +97,8 @@ class FeatureBasedDistillation:
             feats = self.teacher.get_features(images, layer=self.teacher_layer)
         return feats
 
-    def _get_student_features(self, images: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _get_student_features(
+            self, images: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Extract student intermediate features and logits in one forward pass.
 
@@ -101,15 +107,28 @@ class FeatureBasedDistillation:
         intermediate = {}
 
         # Tap into student's backbone at the intermediate block
-        if hasattr(self.student, "backbone") and hasattr(self.student.backbone, "features"):
+        if hasattr(
+                self.student,
+                "backbone") and hasattr(
+                self.student.backbone,
+                "features"):
             # MobileNetV2 path
             block_idx = 14
+
             def hook_fn(module, input, output):
                 intermediate["feat"] = output
-            handle = self.student.backbone.features[block_idx].register_forward_hook(hook_fn)
+            handle = self.student.backbone.features[block_idx].register_forward_hook(
+                hook_fn)
             logits = self.student(images)
             handle.remove()
-            feats = intermediate.get("feat", torch.zeros(images.size(0), self.student.intermediate_channels, 4, 4, device=self.device))
+            feats = intermediate.get(
+                "feat",
+                torch.zeros(
+                    images.size(0),
+                    self.student.intermediate_channels,
+                    4,
+                    4,
+                    device=self.device))
         else:
             # MockStudent path
             feats = self.student.get_intermediate_features(images)
@@ -210,7 +229,8 @@ class FeatureBasedDistillation:
         best_epoch = 0
 
         for epoch in range(1, num_epochs + 1):
-            total_loss, feat_loss = self.train_one_epoch(train_loader, optimizer)
+            total_loss, feat_loss = self.train_one_epoch(
+                train_loader, optimizer)
             val_acc = self.evaluate(val_loader)
             scheduler.step()
 
@@ -238,5 +258,7 @@ class FeatureBasedDistillation:
             train_loss_history=train_losses,
             val_accuracy_history=val_accs,
             best_epoch=best_epoch,
-            hyperparams={"lambda": self.lam, "teacher_layer": self.teacher_layer},
+            hyperparams={
+                "lambda": self.lam,
+                "teacher_layer": self.teacher_layer},
         )

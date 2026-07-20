@@ -126,7 +126,10 @@ class ModelEvaluator:
         """Total parameter count."""
         return sum(p.numel() for p in model.parameters())
 
-    def compression_ratio(self, teacher: nn.Module, student: nn.Module) -> float:
+    def compression_ratio(
+            self,
+            teacher: nn.Module,
+            student: nn.Module) -> float:
         """
         Ratio of teacher parameters to student parameters.
 

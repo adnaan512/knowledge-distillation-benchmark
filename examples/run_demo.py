@@ -10,6 +10,15 @@ Usage:
     python examples/run_demo.py --quiet
 """
 
+from tests.fixtures.mock_models import TinyTeacher, TinyStudent
+from src.distillation.relation_based import RelationBasedDistillation
+from src.distillation.feature_based import FeatureBasedDistillation
+from src.distillation.response_based import ResponseBasedDistillation
+from src.reporting.report_generator import ReportGenerator
+from src.benchmark.evaluator import ModelEvaluator
+from src.data_models import BenchmarkReport, CompressionMetrics
+from src.data.dataset_loader import MockDatasetLoader
+import torch
 import sys
 import os
 import argparse
@@ -17,23 +26,26 @@ import argparse
 # Allow running from project root or from examples/
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-import torch
-from src.data.dataset_loader import MockDatasetLoader
-from src.data_models import BenchmarkReport, CompressionMetrics
-from src.benchmark.evaluator import ModelEvaluator
-from src.reporting.report_generator import ReportGenerator
-from src.distillation.response_based import ResponseBasedDistillation
-from src.distillation.feature_based import FeatureBasedDistillation
-from src.distillation.relation_based import RelationBasedDistillation
-from tests.fixtures.mock_models import TinyTeacher, TinyStudent
-
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Knowledge Distillation Demo (mock mode)")
-    p.add_argument("--epochs",  type=int, default=3,                  help="Epochs per method (default: 3)")
-    p.add_argument("--samples", type=int, default=100,                 help="Mock dataset size (default: 100)")
-    p.add_argument("--output",  type=str, default="demo_report.html",  help="Report output path")
-    p.add_argument("--quiet",   action="store_true",                   help="Suppress per-epoch output")
+    p = argparse.ArgumentParser(
+        description="Knowledge Distillation Demo (mock mode)")
+    p.add_argument(
+        "--epochs",
+        type=int,
+        default=3,
+        help="Epochs per method (default: 3)")
+    p.add_argument("--samples", type=int, default=100,
+                   help="Mock dataset size (default: 100)")
+    p.add_argument(
+        "--output",
+        type=str,
+        default="demo_report.html",
+        help="Report output path")
+    p.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress per-epoch output")
     return p.parse_args()
 
 
@@ -56,8 +68,8 @@ def run_demo(
     Returns:
         BenchmarkReport with all metrics populated
     """
-    device  = torch.device("cpu")
-    methods  = ["response", "feature", "relation"]
+    device = torch.device("cpu")
+    methods = ["response", "feature", "relation"]
     variants = ["full", "half", "quarter"]
 
     print("\n" + "═" * 62)
@@ -66,31 +78,33 @@ def run_demo(
     print(f"  {len(methods)} methods × {len(variants)} variants × {epochs} epochs")
     print("═" * 62 + "\n")
 
-    # ── Dataset ───────────────────────────────────────────────────────────────
-    print(f"[1/5] Building mock CIFAR-10-shaped dataset ({samples} samples)...")
+    # ── Dataset ─────────────────────────────────────────────────────────────
+    print(
+        f"[1/5] Building mock CIFAR-10-shaped dataset ({samples} samples)...")
     mock = MockDatasetLoader(num_samples=samples, batch_size=16, seed=42)
     train_loader, val_loader, test_loader = mock.get_loaders()
     print("      ✓ Train / val / test loaders ready\n")
 
-    # ── Teacher ───────────────────────────────────────────────────────────────
+    # ── Teacher ─────────────────────────────────────────────────────────────
     print("[2/5] Initialising mock teacher (TinyTeacher, 2-layer, frozen)...")
-    teacher   = TinyTeacher(frozen=True).to(device)
+    teacher = TinyTeacher(frozen=True).to(device)
     evaluator = ModelEvaluator(device=device)
-    teacher_acc  = evaluator.accuracy(teacher, test_loader)
+    teacher_acc = evaluator.accuracy(teacher, test_loader)
     teacher_size = evaluator.model_size_mb(teacher)
     print(f"      Teacher accuracy (random init): {teacher_acc*100:.1f}%  "
           f"| Size: {teacher_size:.3f} MB\n")
 
-    all_results:  list[CompressionMetrics] = []
-    temp_sweep:   dict = {}
+    all_results: list[CompressionMetrics] = []
+    temp_sweep: dict = {}
     step = 3
 
-    # ── Response-based ────────────────────────────────────────────────────────
-    print(f"[{step}/5] Response-based distillation (soft labels + temperature sweep)...")
+    # ── Response-based ──────────────────────────────────────────────────────
+    print(
+        f"[{step}/5] Response-based distillation (soft labels + temperature sweep)...")
     step += 1
     for variant in variants:
         print(f"  ▶ variant = {variant}")
-        student   = TinyStudent(variant=variant).to(device)
+        student = TinyStudent(variant=variant).to(device)
         distiller = ResponseBasedDistillation(
             teacher=teacher, student=student, device=device,
             temperatures=[1.0, 4.0, 8.0],
@@ -111,12 +125,12 @@ def run_demo(
         all_results.append(metrics)
         _print_metrics(metrics)
 
-    # ── Feature-based ─────────────────────────────────────────────────────────
+    # ── Feature-based ───────────────────────────────────────────────────────
     print(f"\n[{step}/5] Feature-based distillation (intermediate layer MSE)...")
     step += 1
     for variant in variants:
         print(f"  ▶ variant = {variant}")
-        student   = TinyStudent(variant=variant).to(device)
+        student = TinyStudent(variant=variant).to(device)
         distiller = FeatureBasedDistillation(
             teacher=teacher, student=student, device=device, lam=0.5,
         )
@@ -132,12 +146,13 @@ def run_demo(
         all_results.append(metrics)
         _print_metrics(metrics)
 
-    # ── Relation-based ────────────────────────────────────────────────────────
-    print(f"\n[{step}/5] Relation-based distillation (pairwise geometry matching)...")
+    # ── Relation-based ──────────────────────────────────────────────────────
+    print(
+        f"\n[{step}/5] Relation-based distillation (pairwise geometry matching)...")
     step += 1
     for variant in variants:
         print(f"  ▶ variant = {variant}")
-        student   = TinyStudent(variant=variant).to(device)
+        student = TinyStudent(variant=variant).to(device)
         distiller = RelationBasedDistillation(
             teacher=teacher, student=student, device=device, lam=0.5,
         )
@@ -153,9 +168,11 @@ def run_demo(
         all_results.append(metrics)
         _print_metrics(metrics)
 
-    # ── Report ────────────────────────────────────────────────────────────────
+    # ── Report ──────────────────────────────────────────────────────────────
     print(f"\n[{step}/5] Generating HTML report → {output}")
-    best = max(all_results, key=lambda r: r.efficiency_score) if all_results else None
+    best = max(
+        all_results,
+        key=lambda r: r.efficiency_score) if all_results else None
     report = BenchmarkReport(
         teacher_accuracy=teacher_acc,
         teacher_size_mb=teacher_size,
@@ -167,11 +184,14 @@ def run_demo(
     ReportGenerator().generate(report, output_path=output, temp_sweep=temp_sweep)
     print(f"      ✓ Report written to: {output}\n")
 
-    # ── Summary ───────────────────────────────────────────────────────────────
+    # ── Summary ─────────────────────────────────────────────────────────────
     print("─" * 62)
     print(f"{'Method':<12} {'Variant':<10} {'Acc':>6} {'Latency':>10} {'Score':>8}")
     print("─" * 62)
-    for r in sorted(all_results, key=lambda x: x.efficiency_score, reverse=True):
+    for r in sorted(
+            all_results,
+            key=lambda x: x.efficiency_score,
+            reverse=True):
         marker = " ◀ best" if r is best else ""
         print(
             f"{r.method:<12} {r.compression_variant:<10} "

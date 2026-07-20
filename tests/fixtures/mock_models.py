@@ -78,7 +78,12 @@ class TinyStudent(nn.Module):
     ):
         super().__init__()
         self.variant = variant
-        self.width_mult = {"full": 1.0, "half": 0.5, "quarter": 0.35}.get(variant, 1.0)
+        self.width_mult = {
+            "full": 1.0,
+            "half": 0.5,
+            "quarter": 0.35}.get(
+            variant,
+            1.0)
 
         ch = max(1, int(self.FEAT_CHANNELS * self.width_mult))
         self.ch = ch
@@ -103,7 +108,10 @@ class TinyStudent(nn.Module):
         x = torch.relu(self.conv(x))
         return self.pool(x).flatten(1)
 
-    def get_intermediate_features(self, x: torch.Tensor, block_idx: int = 0) -> torch.Tensor:
+    def get_intermediate_features(
+            self,
+            x: torch.Tensor,
+            block_idx: int = 0) -> torch.Tensor:
         """Intermediate feature maps — shape (B, ch, H, W)."""
         return torch.relu(self.conv(x))
 

@@ -17,7 +17,7 @@ representations that transfer extremely well to CIFAR-10.
 
 import torch
 import torch.nn as nn
-from typing import Optional, Dict, Tuple
+from typing import Dict
 
 
 class TeacherModel(nn.Module):
@@ -42,7 +42,8 @@ class TeacherModel(nn.Module):
             else:
                 self.backbone = tvm.resnet50(weights=None)
         except ImportError:
-            raise ImportError("torchvision required. Run: pip install torchvision")
+            raise ImportError(
+                "torchvision required. Run: pip install torchvision")
 
         # Replace the ImageNet head (1000-class) with CIFAR-10 head
         in_features = self.backbone.fc.in_features  # 2048
@@ -65,7 +66,12 @@ class TeacherModel(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.backbone(x)
 
-    def fine_tune_head(self, train_loader, val_loader, device: torch.device, epochs: int = 3):
+    def fine_tune_head(
+            self,
+            train_loader,
+            val_loader,
+            device: torch.device,
+            epochs: int = 3):
         import torch.optim as optim
         import torch.nn.functional as F
 
@@ -73,11 +79,12 @@ class TeacherModel(nn.Module):
         optimizer = optim.Adam(self.backbone.fc.parameters(), lr=1e-3)
         self.to(device)
 
-        print(f"    Fine-tuning teacher classifier head for {epochs} epochs...")
+        print(
+            f"    Fine-tuning teacher classifier head for {epochs} epochs...")
         for epoch in range(epochs):
             self.train()
             total_loss = 0.0
-            
+
             for images, labels in train_loader:
                 images, labels = images.to(device), labels.to(device)
                 optimizer.zero_grad()
@@ -86,7 +93,7 @@ class TeacherModel(nn.Module):
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.item()
-            
+
             # Quick validation accuracy evaluation
             self.eval()
             correct = 0
@@ -98,10 +105,10 @@ class TeacherModel(nn.Module):
                     _, preds = torch.max(outputs, 1)
                     correct += (preds == labels).sum().item()
                     total += labels.size(0)
-            
-            val_acc = correct / total * 100
-            print(f"      Epoch {epoch+1}/{epochs} | Loss: {total_loss/len(train_loader):.4f} | Val Acc: {val_acc:.1f}%")
 
+            val_acc = correct / total * 100
+            print(
+                f"      Epoch {epoch+1}/{epochs} | Loss: {total_loss/len(train_loader):.4f} | Val Acc: {val_acc:.1f}%")
 
     def get_features(self, x: torch.Tensor, layer: int = 3) -> torch.Tensor:
         """
@@ -163,7 +170,11 @@ class MockTeacherModel(nn.Module):
 
     def __init__(self, num_classes: int = 10, input_channels: int = 3):
         super().__init__()
-        self.conv = nn.Conv2d(input_channels, self.FEATURE_CHANNELS, 3, padding=1)
+        self.conv = nn.Conv2d(
+            input_channels,
+            self.FEATURE_CHANNELS,
+            3,
+            padding=1)
         self.pool = nn.AdaptiveAvgPool2d((4, 4))
         self.fc = nn.Linear(self.FEATURE_CHANNELS * 16, num_classes)
 

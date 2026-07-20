@@ -7,9 +7,8 @@ mock models so tests run in under 5 seconds on any hardware.
 """
 
 import torch
-import pytest
 
-from tests.fixtures.mock_models import TinyTeacher, TinyStudent, make_mock_batch
+from tests.fixtures.mock_models import TinyTeacher, TinyStudent
 from src.benchmark.evaluator import ModelEvaluator
 from src.data.dataset_loader import MockDatasetLoader
 
@@ -24,11 +23,12 @@ class TestModelEvaluator:
         self.teacher = TinyTeacher()
         self.student = TinyStudent(variant="full")
 
-    # ── Accuracy ──────────────────────────────────────────────────────────────
+    # ── Accuracy ────────────────────────────────────────────────────────────
 
     def test_accuracy_range(self):
         """Accuracy must be in [0, 1]."""
-        loader = MockDatasetLoader(num_samples=40, batch_size=8).get_loaders()[2]
+        loader = MockDatasetLoader(
+            num_samples=40, batch_size=8).get_loaders()[2]
         acc = self.evaluator.accuracy(self.student, loader)
         assert 0.0 <= acc <= 1.0, f"Accuracy {acc} out of [0, 1]"
 
@@ -43,7 +43,10 @@ class TestModelEvaluator:
                 out[:, 0] = 100.0
                 return out
 
-        loader = MockDatasetLoader(num_samples=100, batch_size=10, seed=42).get_loaders()[2]
+        loader = MockDatasetLoader(
+            num_samples=100,
+            batch_size=10,
+            seed=42).get_loaders()[2]
         model = AlwaysZero()
         acc = self.evaluator.accuracy(model, loader)
 
@@ -56,11 +59,12 @@ class TestModelEvaluator:
         expected = correct / max(total, 1)
         assert abs(acc - expected) < 1e-5
 
-    # ── Inference time ────────────────────────────────────────────────────────
+    # ── Inference time ──────────────────────────────────────────────────────
 
     def test_inference_time_positive(self):
         """Inference time must be positive."""
-        t = self.evaluator.inference_time_ms(self.student, num_runs=10, warmup=2)
+        t = self.evaluator.inference_time_ms(
+            self.student, num_runs=10, warmup=2)
         assert t > 0, f"Inference time should be positive, got {t}"
 
     def test_inference_time_ms_not_seconds(self):
@@ -70,7 +74,8 @@ class TestModelEvaluator:
         A tiny model on CPU should run in under 500ms per sample.
         If we accidentally return seconds, this would be > 0.5.
         """
-        t = self.evaluator.inference_time_ms(self.student, num_runs=20, warmup=3)
+        t = self.evaluator.inference_time_ms(
+            self.student, num_runs=20, warmup=3)
         assert t < 500.0, (
             f"Inference time {t:.1f} suggests units are wrong (should be ms, < 500ms for tiny model)"
         )
@@ -82,15 +87,17 @@ class TestModelEvaluator:
         This is a soft assertion — on tiny mock models timing can be noisy —
         so we allow teacher to be at most 3× faster before failing.
         """
-        teacher_t = self.evaluator.inference_time_ms(self.teacher, num_runs=20, warmup=3)
-        student_t = self.evaluator.inference_time_ms(self.student, num_runs=20, warmup=3)
+        teacher_t = self.evaluator.inference_time_ms(
+            self.teacher, num_runs=20, warmup=3)
+        student_t = self.evaluator.inference_time_ms(
+            self.student, num_runs=20, warmup=3)
 
         # Teacher should not be more than 3x faster than student on mock models
         assert teacher_t < student_t * 3 or student_t < teacher_t * 3, (
             "Timing relationship between teacher and student is inconsistent"
         )
 
-    # ── Model size ────────────────────────────────────────────────────────────
+    # ── Model size ──────────────────────────────────────────────────────────
 
     def test_model_size_positive(self):
         """Size in MB must be positive."""
@@ -117,7 +124,7 @@ class TestModelEvaluator:
             f"Teacher ({teacher_params}) should have more params than student ({student_params})"
         )
 
-    # ── Compression ratio ─────────────────────────────────────────────────────
+    # ── Compression ratio ───────────────────────────────────────────────────
 
     def test_compression_ratio_greater_than_one(self):
         """Teacher has more params → compression ratio > 1."""
@@ -127,9 +134,10 @@ class TestModelEvaluator:
     def test_compression_ratio_self(self):
         """Comparing a model to itself should give ratio ≈ 1.0."""
         ratio = self.evaluator.compression_ratio(self.student, self.student)
-        assert abs(ratio - 1.0) < 1e-5, f"Self-compression ratio should be 1.0, got {ratio}"
+        assert abs(
+            ratio - 1.0) < 1e-5, f"Self-compression ratio should be 1.0, got {ratio}"
 
-    # ── Efficiency score ──────────────────────────────────────────────────────
+    # ── Efficiency score ────────────────────────────────────────────────────
 
     def test_efficiency_score_positive(self):
         """Efficiency score must be positive for accuracy > 0."""
@@ -156,7 +164,8 @@ class TestModelEvaluator:
 
     def test_evaluate_model_returns_metrics(self):
         """evaluate_model should return a CompressionMetrics with all fields set."""
-        loader = MockDatasetLoader(num_samples=32, batch_size=8).get_loaders()[2]
+        loader = MockDatasetLoader(
+            num_samples=32, batch_size=8).get_loaders()[2]
         metrics = self.evaluator.evaluate_model(
             model=self.student,
             test_loader=loader,
@@ -181,10 +190,11 @@ class TestMockDatasetLoader:
         mock = MockDatasetLoader(num_samples=60, batch_size=16)
         train, val, test = mock.get_loaders()
 
-        for loader_name, loader in [("train", train), ("val", val), ("test", test)]:
+        for loader_name, loader in [
+                ("train", train), ("val", val), ("test", test)]:
             for images, labels in loader:
-                assert images.shape[1:] == (3, 32, 32), (
-                    f"{loader_name}: expected image shape (B, 3, 32, 32), got {images.shape}"
+                assert images.shape[1:] == (3, 224, 224), (
+                    f"{loader_name}: expected image shape (B, 3, 224, 224), got {images.shape}"
                 )
                 assert labels.dim() == 1, f"{loader_name}: labels should be 1D"
                 assert labels.max().item() <= 9, f"{loader_name}: label > 9"
@@ -199,6 +209,7 @@ class TestMockDatasetLoader:
         _, _, t2 = m2.get_loaders()
 
         for (img1, lbl1), (img2, lbl2) in zip(t1, t2):
-            assert torch.allclose(img1, img2), "Same seed should give same images"
+            assert torch.allclose(
+                img1, img2), "Same seed should give same images"
             assert (lbl1 == lbl2).all(), "Same seed should give same labels"
             break

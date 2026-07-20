@@ -16,7 +16,6 @@ import os
 import torch
 from torch.utils.data import DataLoader, Subset, random_split
 from typing import Tuple, Optional
-import numpy as np
 
 
 # CIFAR-10 channel statistics computed from the training set
@@ -49,7 +48,8 @@ def get_cifar10_loaders(
         import torchvision
         import torchvision.transforms as transforms
     except ImportError:
-        raise ImportError("torchvision is required. Run: pip install torchvision")
+        raise ImportError(
+            "torchvision is required. Run: pip install torchvision")
 
     if num_workers is None:
         num_workers = os.cpu_count() or 2
@@ -145,7 +145,10 @@ class MockDatasetLoader:
         self._data = torch.randn(num_samples, 3, 224, 224)
         self._labels = torch.randint(0, num_classes, (num_samples,))
 
-    def _make_loader(self, data: torch.Tensor, labels: torch.Tensor) -> DataLoader:
+    def _make_loader(
+            self,
+            data: torch.Tensor,
+            labels: torch.Tensor) -> DataLoader:
         dataset = torch.utils.data.TensorDataset(data, labels)
         return DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
 
